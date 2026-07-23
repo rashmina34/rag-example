@@ -1,0 +1,3 @@
+Our product supports Python, JavaScript, and Go SDKs.
+The free tier includes 1,000 API calls per month.
+Enterprise customers get a dedicated support Slack channel.
