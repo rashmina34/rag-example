@@ -2,6 +2,8 @@ from google import genai
 from google.genai.types import EmbedContentConfig
 import os
 import numpy as np
+from dotenv import load_dotenv
+load_dotenv()
 
 client = genai.Client()
 
