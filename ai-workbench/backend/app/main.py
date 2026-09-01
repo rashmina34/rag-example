@@ -5,6 +5,13 @@ from app.api.chat import router as chat_router
 from app.api.workflows import (
     router as workflow_router,
 )
+from app.api.embeddings import (
+    router as embedding_router,
+)
+
+from app.api.documents import (
+    router as document_router,
+)
 
 from app.models.database import Base
 from app.models.database import engine
@@ -43,6 +50,16 @@ app.include_router(
 
 app.include_router(
     workflow_router,
+    prefix="/api",
+)
+
+app.include_router(
+    embedding_router,
+    prefix="/api",
+)
+
+app.include_router(
+    document_router,
     prefix="/api",
 )
 

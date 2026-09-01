@@ -1,0 +1,19 @@
+Artificial intelligence is a field of computer science
+that focuses on creating systems capable of performing
+tasks that normally require human intelligence.
+
+Large language models are AI models trained on large
+amounts of text. They can generate, summarize, classify,
+and transform natural language.
+
+Embeddings are numerical representations of data.
+They allow applications to compare the semantic meaning
+of different pieces of text.
+
+Vector databases store embeddings and allow applications
+to search for similar pieces of information efficiently.
+
+Retrieval augmented generation combines information
+retrieval with language generation. A system first
+retrieves relevant information and then provides that
+information to a language model as context.
