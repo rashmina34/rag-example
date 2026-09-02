@@ -27,9 +27,9 @@ MODEL = os.getenv(
 
 
 def generate_response(
-    system_prompt: str,
+    # system_prompt: str,
     user_prompt: str,
-    temperature: float = 0.7,
+    # temperature: float = 0.7,
 ) -> str:
 
     for attempt in range(3):
@@ -37,10 +37,10 @@ def generate_response(
             response = client.models.generate_content(
                 model=MODEL,
                 contents=user_prompt,
-                config=types.GenerateContentConfig(
-                    system_instruction=system_prompt,
-                    temperature=temperature,
-                ),
+                # config=types.GenerateContentConfig(
+                #     system_instruction=system_prompt,
+                #     temperature=temperature,
+                # ),
             )
 
             return response.text

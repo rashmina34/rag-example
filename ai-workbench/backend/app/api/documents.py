@@ -22,6 +22,14 @@ from app.services.vector_store import (
     search_chunks,
 )
 
+from app.models.document import (
+    RAGRequest,
+)
+
+from app.services.rag import (
+    answer_question,
+)
+
 
 router = APIRouter(
     prefix="/documents",
@@ -127,6 +135,33 @@ def search_documents(
             "query": request.query,
             "results": results,
         }
+
+    except ValueError as error:
+
+        raise HTTPException(
+            status_code=400,
+            detail=str(error),
+        )
+
+    except Exception as error:
+
+        raise HTTPException(
+            status_code=500,
+            detail=str(error),
+        )
+        
+@router.post("/ask")
+def ask_documents(
+    request: RAGRequest,
+):
+
+    try:
+
+        return answer_question(
+            question=request.question,
+            top_k=request.top_k,
+            document_id=request.document_id,
+        )
 
     except ValueError as error:
 

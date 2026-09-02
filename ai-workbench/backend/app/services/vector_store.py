@@ -78,6 +78,7 @@ def delete_document(
 def search_chunks(
     query_embedding: list[float],
     top_k: int = 5,
+    document_id: str | None =  None
 ):
 
     if top_k <= 0:

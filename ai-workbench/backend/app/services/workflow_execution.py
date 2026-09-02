@@ -2,6 +2,7 @@ from datetime import datetime
 from uuid import uuid4
 
 from sqlalchemy.orm import Session
+from app.services.rag import answer_question
 
 from app.models.workflow import Workflow
 
@@ -72,12 +73,25 @@ def execute_and_record_workflow(
             db.commit()
 
             try:
+                if step.type == "llm":
+                    
+                    output = generate_response(
+                        system_prompt=step.system_prompt,
+                        user_prompt=rendered_prompt,
+                        temperature=step.temperature,
+                    )
+                elif step.type == "rag":
+                    rag_result = answer_question(
+                    question=rendered_prompt,
+                    top_k=5,
+                    )
 
-                output = generate_response(
-                    system_prompt=step.system_prompt,
-                    user_prompt=rendered_prompt,
-                    temperature=step.temperature,
-                )
+                    output = rag_result["answer"]
+                else:
+                     raise ValueError(
+                        f"Unsupported workflow step type: {step.type}"
+                     )
+
 
                 step_execution.status = (
                     "completed"

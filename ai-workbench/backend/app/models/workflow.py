@@ -66,3 +66,17 @@ class WorkflowUpdate(BaseModel):
 
 class WorkflowExecuteRequest(BaseModel):
     input: str
+    
+
+#alternative of above others schema
+class WorkflowStepSchema(BaseModel):
+    id: str
+    type: str
+    input: str
+
+class WorkflowSchema(BaseModel):
+    name: str
+    description: str = ""
+    steps: list[WorkflowStepSchema] = Field(
+        default_factory=list
+    )

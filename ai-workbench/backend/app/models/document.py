@@ -48,3 +48,11 @@ class DocumentSearchResult(BaseModel):
     text: str
 
     distance: float
+    
+class RAGRequest(BaseModel):
+    question: str
+
+    top_k: int = 5
+
+    document_id: str | None = None
+    
