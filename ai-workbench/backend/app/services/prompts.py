@@ -13,35 +13,57 @@ import re
 # # Running the function
 # output = render_prompt(template_string, data_context)
 
+# def render_prompt(
+#     template: str,
+#     context: dict,
+# ) -> str:
+
+#     result = template
+
+#     pattern = r"\{\{([^}]+)\}\}" # search text wrap inside {{}}
+
+#     matches = re.findall(
+#         pattern,
+#         template,
+#     )
+
+#     for expression in matches:
+
+#         expression = expression.strip()
+
+#         value = resolve_expression(
+#             expression,
+#             context,
+#         )
+
+#         result = result.replace(
+#             "{{" + expression + "}}",
+#             str(value),
+#         )
+
+#     return result
+
+VARIABLE_PATTERN = re.compile(r"\{\{\s*([^}]+?)\s*\}\}")
+
+
 def render_prompt(
-    template: str,
+    prompt: str,
     context: dict,
 ) -> str:
+    def replace_variable(match):
+        variable = match.group(1).strip()
 
-    result = template
+        if variable not in context:
+            raise ValueError(
+                f"Workflow variable '{variable}' was not found in context."
+            )
 
-    pattern = r"\{\{([^}]+)\}\}" # search text wrap inside {{}}
+        return str(context[variable])
 
-    matches = re.findall(
-        pattern,
-        template,
+    return VARIABLE_PATTERN.sub(
+        replace_variable,
+        prompt,
     )
-
-    for expression in matches:
-
-        expression = expression.strip()
-
-        value = resolve_expression(
-            expression,
-            context,
-        )
-
-        result = result.replace(
-            "{{" + expression + "}}",
-            str(value),
-        )
-
-    return result
 
 
 def resolve_expression(

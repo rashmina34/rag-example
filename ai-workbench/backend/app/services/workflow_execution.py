@@ -9,6 +9,7 @@ from app.models.workflow import Workflow
 from app.models.workflow_db import (
     WorkflowExecutionDB,
     WorkflowStepExecutionDB,
+    WorkflowRAGSourceDB
 )
 
 from app.services.llm import generate_response
@@ -40,6 +41,7 @@ def execute_and_record_workflow(
     }
 
     results = []
+    step_sources = []
 
     try:
 
@@ -84,15 +86,33 @@ def execute_and_record_workflow(
                     rag_result = answer_question(
                     question=rendered_prompt,
                     top_k=5,
+                    document_id=step.document_id
                     )
 
                     output = rag_result["answer"]
+                    step_sources = rag_result["sources"]
                 else:
                      raise ValueError(
                         f"Unsupported workflow step type: {step.type}"
                      )
+                
+                
 
+                if len(step_sources > 0):
+                    for source in step_sources:
+                        source_record = WorkflowRAGSourceDB(
+                        id=str(uuid4()),
+                        step_execution_id=step_execution_id,
+                        document_id=source["document_id"],
+                        filename=source["filename"],
+                        chunk_index=source["chunk_index"],
+                        distance=source["distance"],
+                        text=source["text"],
+                        )
 
+                        db.add(source_record)
+
+                    db.commit()
                 step_execution.status = (
                     "completed"
                 )
@@ -114,6 +134,7 @@ def execute_and_record_workflow(
                         "step_id": step.id,
                         "step_name": step.name,
                         "output": output,
+                        "sources": step_sources,
                     }
                 )
 

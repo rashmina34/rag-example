@@ -186,17 +186,17 @@ def get_execution_history(
     db: Session = Depends(get_db),
 ):
 
-    workflow = get_workflow(
-        db,
-        workflow_id,
-    )
+    # workflow = get_workflow(
+    #     db,
+    #     workflow_id,
+    # )
 
-    if workflow is None:
+    # if workflow is None:
 
-        raise HTTPException(
-            status_code=404,
-            detail="Workflow not found.",
-        )
+    #     raise HTTPException(
+    #         status_code=404,
+    #         detail="Workflow not found.",
+    #     )
 
     executions = (
         db.query(WorkflowExecutionDB)
@@ -213,6 +213,7 @@ def get_execution_history(
     return [
         {
             "id": execution.id,
+            "workflow_id": execution.workflow_id,
             "status": execution.status,
             "input": execution.input,
             "output": execution.output,

@@ -205,3 +205,21 @@ class WorkflowStepExecutionDB(Base):
         DateTime,
         nullable=True,
     )
+    
+class WorkflowRAGSourceDB(Base):
+    __tablename__ = "workflow_rag_sources"
+
+    id: Mapped[str] = mapped_column(
+        String(100),
+        primary_key=True,
+    )
+    step_execution_id: Mapped[str] = mapped_column(
+        ForeignKey("workflow_step_executions.id"),
+        nullable=False,
+    )
+
+    document_id: Mapped[str] = mapped_column(String(100), nullable=False)
+    filename:Mapped[str] = mapped_column(Text, nullable=False)
+    chunk_index:Mapped[int] = mapped_column(Integer, nullable=False)
+    distance:Mapped[float] = mapped_column(Float, nullable=False)
+    text:Mapped[str] = mapped_column(Text, nullable=False)

@@ -73,6 +73,12 @@ class WorkflowStepSchema(BaseModel):
     id: str
     type: str
     input: str
+    prompt: str
+    system_prompt: str = ""
+    temperature: float = 0.2
+
+    top_k: int = 5
+    document_id: str | None = None
 
 class WorkflowSchema(BaseModel):
     name: str
