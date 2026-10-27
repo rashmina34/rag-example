@@ -17,19 +17,23 @@ if not api_key:
     )
 
 client = genai.Client(
-    api_key=api_key
+    api_key=api_key,
+    http_options=types.HttpOptions(
+        timeout=30_000,
+    ),
 )
 
-MODEL = os.getenv(
-    "GEMINI_PRIMARY_MODEL",
-    "gemini-3.6-flash",
+MODEL = (
+    os.getenv("GEMINI_PRIMARY_MODEL")
+    or os.getenv("GEMINI_MODEL")
+    or "gemini-3.5-flash"
 )
 
 
 def generate_response(
-    # system_prompt: str,
     user_prompt: str,
-    # temperature: float = 0.7,
+    system_prompt: str = "You are a helpful AI assistant.",
+    temperature: float = 0.7,
 ) -> str:
 
     for attempt in range(3):
@@ -37,10 +41,10 @@ def generate_response(
             response = client.models.generate_content(
                 model=MODEL,
                 contents=user_prompt,
-                # config=types.GenerateContentConfig(
-                #     system_instruction=system_prompt,
-                #     temperature=temperature,
-                # ),
+                config=types.GenerateContentConfig(
+                    system_instruction=system_prompt,
+                    temperature=temperature,
+                ),
             )
 
             return response.text

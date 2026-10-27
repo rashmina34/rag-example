@@ -33,6 +33,8 @@ def create_workflow(
             system_prompt=step.system_prompt,
             prompt=step.prompt,
             temperature=step.temperature,
+            top_k=step.top_k,
+            document_id=step.document_id,
         )
 
         db.add(db_step)
@@ -107,6 +109,8 @@ def db_to_workflow(
                 "system_prompt": step.system_prompt,
                 "prompt": step.prompt,
                 "temperature": step.temperature,
+                "top_k": step.top_k or 5,
+                "document_id": step.document_id,
             }
         )
 

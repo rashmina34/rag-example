@@ -99,6 +99,7 @@ def answer_question(
         "answer": answer,
         "sources": [
             {
+                "document_id": result.document_id,
                 "filename": result.filename,
                 "chunk_index": result.chunk_index,
                 "distance": result.distance,

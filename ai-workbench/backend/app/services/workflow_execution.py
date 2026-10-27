@@ -74,9 +74,11 @@ def execute_and_record_workflow(
 
             db.commit()
 
+            step_sources = []
+
             try:
-                if step.type == "llm":
-                    
+                if step.type in ("llm", "prompt"):
+
                     output = generate_response(
                         system_prompt=step.system_prompt,
                         user_prompt=rendered_prompt,
@@ -85,8 +87,8 @@ def execute_and_record_workflow(
                 elif step.type == "rag":
                     rag_result = answer_question(
                     question=rendered_prompt,
-                    top_k=5,
-                    document_id=step.document_id
+                    top_k=step.top_k,
+                    document_id=step.document_id,
                     )
 
                     output = rag_result["answer"]
@@ -98,7 +100,7 @@ def execute_and_record_workflow(
                 
                 
 
-                if len(step_sources > 0):
+                if step_sources:
                     for source in step_sources:
                         source_record = WorkflowRAGSourceDB(
                         id=str(uuid4()),
@@ -113,6 +115,7 @@ def execute_and_record_workflow(
                         db.add(source_record)
 
                     db.commit()
+
                 step_execution.status = (
                     "completed"
                 )

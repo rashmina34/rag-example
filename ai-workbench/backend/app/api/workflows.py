@@ -112,6 +112,8 @@ def get_one(
                 "system_prompt": step.system_prompt,
                 "prompt": step.prompt,
                 "temperature": step.temperature,
+                "top_k": step.top_k,
+                "document_id": step.document_id,
             }
             for step in workflow.steps
         ],

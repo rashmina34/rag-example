@@ -15,6 +15,7 @@ from app.api.documents import (
 
 from app.models.database import Base
 from app.models.database import engine
+from app.models.database import ensure_workflow_step_columns
 
 from app.models import workflow_db
 
@@ -22,6 +23,8 @@ from app.models import workflow_db
 Base.metadata.create_all(
     bind=engine
 )
+
+ensure_workflow_step_columns()
 
 
 app = FastAPI(

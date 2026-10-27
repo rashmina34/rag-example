@@ -5,8 +5,9 @@ from pydantic import Field
 
 
 StepType = Literal[
-    "prompt",
-    "transform",
+    "llm",
+    "rag",
+    "prompt",  # legacy alias for "llm"
 ]
 
 
@@ -15,7 +16,7 @@ class WorkflowStep(BaseModel):
 
     name: str
 
-    type: StepType = "prompt"
+    type: StepType = "llm"
 
     system_prompt: str = (
         "You are a helpful AI assistant."
@@ -28,6 +29,10 @@ class WorkflowStep(BaseModel):
         ge=0.0,
         le=2.0,
     )
+
+    top_k: int = 5
+
+    document_id: str | None = None
 
 
 class Workflow(BaseModel):

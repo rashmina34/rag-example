@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import chromadb
 
 from app.models.document import (
@@ -5,7 +7,9 @@ from app.models.document import (
 )
 
 
-CHROMA_PATH = "./chroma_db"
+CHROMA_PATH = str(
+    Path(__file__).resolve().parents[2] / "chroma_db"
+)
 
 
 client = chromadb.PersistentClient(
@@ -86,11 +90,18 @@ def search_chunks(
             "top_k must be greater than 0."
         )
 
+    where = (
+        {"document_id": document_id}
+        if document_id
+        else None
+    )
+
     results = collection.query(
         query_embeddings=[
             query_embedding
         ],
         n_results=top_k,
+        where=where,
     )
 
     matches = []

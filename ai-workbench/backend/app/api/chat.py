@@ -1,4 +1,5 @@
 from fastapi import APIRouter
+from fastapi import HTTPException
 from pydantic import BaseModel
 
 from app.services.llm import generate_response
@@ -19,13 +20,22 @@ def chat(
     request: ChatRequest,
 ):
 
-    response = generate_response(
-        system_prompt=(
-            "You are a helpful AI assistant."
-        ),
-        user_prompt=request.message,
-        temperature=0.7,
-    )
+    try:
+
+        response = generate_response(
+            system_prompt=(
+                "You are a helpful AI assistant."
+            ),
+            user_prompt=request.message,
+            temperature=0.7,
+        )
+
+    except Exception as error:
+
+        raise HTTPException(
+            status_code=500,
+            detail=str(error),
+        )
 
     return {
         "response": response

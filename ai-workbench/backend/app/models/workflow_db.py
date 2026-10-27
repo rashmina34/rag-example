@@ -79,7 +79,7 @@ class WorkflowStepDB(Base):
 
     type: Mapped[str] = mapped_column(
         String(50),
-        default="prompt",
+        default="llm",
     )
 
     system_prompt: Mapped[str] = mapped_column(
@@ -95,6 +95,16 @@ class WorkflowStepDB(Base):
     temperature: Mapped[float] = mapped_column(
         Float,
         default=0.7,
+    )
+
+    top_k: Mapped[int] = mapped_column(
+        Integer,
+        default=5,
+    )
+
+    document_id: Mapped[Optional[str]] = mapped_column(
+        String(100),
+        nullable=True,
     )
 
     workflow = relationship(
