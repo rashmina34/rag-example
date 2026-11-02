@@ -55,4 +55,6 @@ class RAGRequest(BaseModel):
     top_k: int = 5
 
     document_id: str | None = None
-    
+
+    include_prompt: bool = False
+

@@ -2,9 +2,11 @@
 
 A learning project for building AI applications on top of Google Gemini. It has a FastAPI backend and a Next.js frontend, and covers four things:
 
-- **Chat**: single-turn chat with Gemini.
+- **Chat**: multi-turn chat with Gemini, streamed token by token, with an editable system prompt and temperature.
 - **Embeddings**: turn text into vectors with `gemini-embedding-001`.
 - **RAG**: upload `.txt` documents, chunk and embed them into ChromaDB, then ask questions grounded in those documents.
+- **RAG evaluation**: score the RAG pipeline on a fixed set of test questions and compare runs, to see whether a change (chunk size, top K) helped.
+- **Learning labs**: three interactive pages that show what happens inside RAG: a chunking lab, an embeddings visualizer and a prompt viewer.
 - **Workflows**: multi-step pipelines of `llm` and `rag` steps. Steps are stored in SQLite, can use each other's output as prompt variables, and every execution is recorded.
 
 ```
@@ -79,11 +81,18 @@ All routes are under `/api`, except `/` and `/health`.
 | Method | Path | Description |
 | --- | --- | --- |
 | GET | `/health` | Liveness check |
-| POST | `/api/chat` | `{"message": "..."}` returns `{"response": "..."}` |
+| POST | `/api/chat` | `{"message": "..."}` returns `{"response": "..."}`. Single turn, no history. |
+| POST | `/api/chat/stream` | Multi-turn chat. Body: `{"messages": [{"role": "user" \| "assistant", "content": "..."}], "system_prompt": "...", "temperature": 0.7}`. The last message must be from the user. The reply streams back as Server-Sent Events. See "Chat" below. |
 | POST | `/api/embeddings` | `{"text": "..."}` returns the embedding vector and its dimensions |
-| POST | `/api/documents/upload` | Multipart `file` (`.txt`, UTF-8). Chunks it (500 chars, 50 overlap), embeds each chunk and stores them in ChromaDB. |
+| POST | `/api/documents/upload` | Multipart `file` (`.txt`, UTF-8). Chunks it (query params `chunk_size`, default 500, and `chunk_overlap`, default 50), embeds each chunk and stores them in ChromaDB. |
 | POST | `/api/documents/search` | `{"query": "...", "top_k": 5}` returns the nearest chunks |
-| POST | `/api/documents/ask` | `{"question": "...", "top_k": 5, "document_id": null}` returns a RAG answer with its sources. Set `document_id` to restrict retrieval to one document. |
+| POST | `/api/documents/ask` | `{"question": "...", "top_k": 5, "document_id": null, "include_prompt": false}` returns a RAG answer with its sources. Set `document_id` to restrict retrieval to one document. Set `include_prompt` to also get the exact prompt sent to the model, split into `system`, `context`, `question` and `full`. |
+| POST | `/api/evaluations/run` | Run a set of test questions through RAG and score them. See "RAG evaluation" below. |
+| GET | `/api/evaluations/runs` | List past runs with their scores |
+| GET | `/api/evaluations/runs/{id}` | One run with per-question results |
+| DELETE | `/api/evaluations/runs/{id}` | Delete a run |
+| POST | `/api/lab/chunk` | `{"text": "...", "chunk_size": 500, "chunk_overlap": 50}` returns the chunks with their character offsets. No AI call is made. |
+| POST | `/api/lab/similarity` | `{"texts": ["...", "..."]}` (2 to 12 texts) returns the cosine-similarity matrix and 2D PCA coordinates. Calls the embedding model once per text. |
 | POST | `/api/workflows` | Create a workflow |
 | GET | `/api/workflows` | List workflows |
 | GET | `/api/workflows/{id}` | Get a workflow with its steps |
@@ -104,6 +113,84 @@ curl -F file=@../docs/test.txt localhost:8000/api/documents/upload
 curl -X POST localhost:8000/api/documents/ask -H 'content-type: application/json' \
   -d '{"question": "What are large language models?"}'
 ```
+
+## Chat
+
+The chat page (`/chat`) is a multi-turn chatbot with streaming.
+
+- **Memory:** the model itself remembers nothing. The server is stateless, and the browser sends the whole conversation with every request. The conversation is also saved in the browser's `localStorage`, so a refresh keeps it.
+- **Streaming:** `POST /api/chat/stream` replies with `text/event-stream`. Each event is one line of JSON:
+  - `data: {"text": "..."}`: a piece of the answer, sent many times.
+  - `data: {"done": true, "dropped": 0}`: sent once at the end. `dropped` is how many old messages were left out.
+  - `data: {"error": "..."}`: sent instead if the model call fails.
+- **Context trimming** (`conversation.py`): a model can only read so much, so when the history passes a budget of 12,000 characters (about 3,000 tokens) the oldest messages are left out of the request. The page tells the user when this happens. The budget is a simple character count, not a real token count.
+- **Controls:** Stop cancels a running answer, Regenerate asks again for the last answer, and New chat clears the conversation. Settings lets you change the system prompt and temperature.
+
+```bash
+curl -N -X POST localhost:8000/api/chat/stream -H 'content-type: application/json' -d '{
+  "messages": [
+    {"role": "user", "content": "My name is Sam."},
+    {"role": "assistant", "content": "Nice to meet you, Sam."},
+    {"role": "user", "content": "What is my name?"}
+  ]
+}'
+```
+
+## RAG evaluation
+
+A RAG demo that works on one question proves little. The evaluation page (`/evaluation`) runs a fixed set of test questions through the pipeline and gives you scores, so you can change one thing and see whether it helped.
+
+Each test question has three parts:
+
+- `question`: what to ask.
+- `evidence`: a phrase that must appear in the chunk holding the answer. Leave it empty for a question the document cannot answer.
+- `reference_answer`: what a correct answer says (used by the AI judge).
+
+Metrics:
+
+| Metric | Mode | Meaning |
+| --- | --- | --- |
+| Hit rate | both | Share of questions where a chunk containing the evidence was retrieved in the top K. |
+| MRR | both | Mean of 1 / rank of that chunk (1.0 means it is always first, 0 means never found). |
+| Correctness | `full` | An AI judge says the answer agrees with the reference answer. |
+| Faithfulness | `full` | An AI judge says every claim in the answer is supported by the retrieved chunks. |
+
+Retrieval metrics only count questions that have `evidence`. Questions that error are left out of every average and are shown with their error.
+
+Two modes:
+
+- **`retrieval`** only embeds each question and checks what comes back. It is fast and makes no generation calls. Start here: if the right chunk is not retrieved, no prompt can fix the answer.
+- **`full`** also generates each answer and has the judge grade it. That is 2 model calls per question.
+
+**Rate limits:** Gemini free-tier keys allow about 5 generation calls a minute, so a `full` run of more than a couple of questions takes minutes. `llm.py` waits for the delay the API asks for and retries when it gets a 429. A run is limited to 20 questions, and 2 are evaluated at a time.
+
+Every run is stored in SQLite (`eval_runs` and `eval_results`). The page's history table shows the runs side by side and highlights the best score in each column.
+
+A good first experiment: upload `docs/test.txt` at chunk size 500 and again at chunk size 120, run the sample questions in `retrieval` mode with top K 1 for each, and compare. On the sample set, small chunks scored lower because they cut the answer apart.
+
+```bash
+curl -X POST localhost:8000/api/evaluations/run -H 'content-type: application/json' -d '{
+  "label": "chunk 500, top 3",
+  "mode": "retrieval",
+  "top_k": 3,
+  "document_id": null,
+  "cases": [
+    {"question": "What do vector databases do?",
+     "reference_answer": "They store embeddings and search for similar information.",
+     "evidence": "store embeddings"}
+  ]
+}'
+```
+
+## Learning labs
+
+Open these from the nav bar in the frontend. They are meant for beginners, so each page explains the idea before showing it.
+
+| Page | URL | What it shows |
+| --- | --- | --- |
+| Chunking Lab | `/lab/chunking` | Paste text and move the chunk size and overlap sliders. The text is colored by chunk, and overlapping text is underlined. Runs instantly and makes no AI calls. |
+| Embeddings Visualizer | `/lab/embeddings` | Enter a few texts, one per line. Each is embedded with Gemini, then shown on a 2D map plus a similarity heatmap, so you can see that "kitten" is closer to "cat" than to "car". Includes presets, such as one with two meanings of "bank". |
+| Show the prompt | `/` (after asking a question) | Below every RAG answer, the exact prompt sent to the model, split into instructions, retrieved context and your question. It shows that RAG is only a normal LLM call with extra text pasted in. |
 
 ## How RAG works
 
@@ -149,7 +236,7 @@ Every run is saved in SQLite. `workflow_executions` holds the run, `workflow_ste
 
 ## Database
 
-- **SQLite** (`backend/ai_workbench.db`): tables `workflows`, `workflow_steps`, `workflow_executions`, `workflow_step_executions` and `workflow_rag_sources`. They are created on startup, and `workflow_steps` gets `top_k` and `document_id` columns added automatically if your database predates them.
+- **SQLite** (`backend/ai_workbench.db`): tables `workflows`, `workflow_steps`, `workflow_executions`, `workflow_step_executions`, `workflow_rag_sources`, `eval_runs` and `eval_results`. They are created on startup, and `workflow_steps` gets `top_k` and `document_id` columns added automatically if your database predates them.
 - **ChromaDB** (`backend/chroma_db/`): collection `ai_workbench_documents`.
 
 To start from scratch, stop the server and delete `ai_workbench.db` and `chroma_db/`.

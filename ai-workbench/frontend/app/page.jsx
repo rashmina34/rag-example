@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { uploadDocument, askQuestion } from "./api";
+import Nav from "./components/Nav";
+import PromptViewer from "./components/PromptViewer";
 
 export default function App() {
   const [file, setFile] = useState(null);
@@ -12,6 +14,7 @@ export default function App() {
 
   const [answer, setAnswer] = useState("");
   const [sources, setSources] = useState([]);
+  const [prompt, setPrompt] = useState(null);
 
   const [uploading, setUploading] = useState(false);
   const [asking, setAsking] = useState(false);
@@ -33,6 +36,7 @@ export default function App() {
       setDocument(result);
       setAnswer("");
       setSources([]);
+      setPrompt(null);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -53,11 +57,13 @@ export default function App() {
       const result = await askQuestion(
         question,
         topK,
-        document?.document_id || null
+        document?.document_id || null,
+        true
       );
 
       setAnswer(result.answer);
       setSources(result.sources || []);
+      setPrompt(result.prompt || null);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -73,6 +79,7 @@ export default function App() {
         <p>Document RAG Assistant</p>
       </header>
 
+      <Nav />
 
       <main className="container">
 
@@ -216,6 +223,16 @@ export default function App() {
                 </div>
               </div>
             ))}
+          </section>
+        )}
+
+        {/* Prompt */}
+
+        {prompt && (
+          <section className="card">
+            <h2>5. The Prompt Sent to the Model</h2>
+
+            <PromptViewer prompt={prompt} />
           </section>
         )}
 

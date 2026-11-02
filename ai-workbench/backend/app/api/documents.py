@@ -1,6 +1,7 @@
 from fastapi import APIRouter
 from fastapi import File
 from fastapi import HTTPException
+from fastapi import Query
 from fastapi import UploadFile
 
 from app.models.document import (
@@ -43,6 +44,8 @@ router = APIRouter(
 )
 async def upload_document(
     file: UploadFile = File(...),
+    chunk_size: int = Query(default=500, ge=1, le=5000),
+    chunk_overlap: int = Query(default=50, ge=0, le=4999),
 ):
 
     if not file.filename:
@@ -68,8 +71,8 @@ async def upload_document(
         chunks = ingest_document(
             filename=file.filename,
             content=content,
-            chunk_size=500,
-            chunk_overlap=50,
+            chunk_size=chunk_size,
+            chunk_overlap=chunk_overlap,
         )
 
         if not chunks:
@@ -161,6 +164,7 @@ def ask_documents(
             question=request.question,
             top_k=request.top_k,
             document_id=request.document_id,
+            include_prompt=request.include_prompt,
         )
 
     except ValueError as error:

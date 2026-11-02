@@ -62,6 +62,7 @@ def answer_question(
     question: str,
     top_k: int = 5,
     document_id: str | None = None,
+    include_prompt: bool = False,
 ):
 
     results = retrieve(
@@ -94,7 +95,7 @@ def answer_question(
         prompt
     )
 
-    return {
+    response = {
         "question": question,
         "answer": answer,
         "sources": [
@@ -108,3 +109,14 @@ def answer_question(
             for result in results
         ],
     }
+
+    if include_prompt:
+
+        response["prompt"] = {
+            "system": RAG_SYSTEM_PROMPT.strip(),
+            "context": context.strip(),
+            "question": question,
+            "full": prompt.strip(),
+        }
+
+    return response

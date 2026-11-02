@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Nav from "../components/Nav";
 
 const API_URL = "http://localhost:8000";
 
@@ -233,6 +234,8 @@ export default function Home() {
         </div>
 
       </header>
+
+      <Nav />
 
       <div className="mx-auto max-w-7xl p-6">
 

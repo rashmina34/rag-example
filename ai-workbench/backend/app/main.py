@@ -13,10 +13,19 @@ from app.api.documents import (
     router as document_router,
 )
 
+from app.api.evaluation import (
+    router as evaluation_router,
+)
+
+from app.api.lab import (
+    router as lab_router,
+)
+
 from app.models.database import Base
 from app.models.database import engine
 from app.models.database import ensure_workflow_step_columns
 
+from app.models import evaluation_db
 from app.models import workflow_db
 
 
@@ -63,6 +72,18 @@ app.include_router(
 
 app.include_router(
     document_router,
+    prefix="/api",
+)
+
+
+app.include_router(
+    evaluation_router,
+    prefix="/api",
+)
+
+
+app.include_router(
+    lab_router,
     prefix="/api",
 )
 
